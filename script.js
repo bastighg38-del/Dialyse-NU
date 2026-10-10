@@ -1,0 +1,294 @@
+/* Laborauswertung – keine Speicherung, alles nur im Arbeitsspeicher */
+
+// [Gruppe, id, Anzeigename, Suchbegriff im Labortext, Einheit, Standard-Zielbereich]
+const I = [
+  ["Blutbildung", "hb", "Hämoglobin", "Hämoglobin (PHOT)", "g/dl", "10-12"],
+  ["Blutbildung", "fer", "Ferritin", "Ferritin", "µg/l", ""],
+  [
+    "Blutbildung",
+    "tsat",
+    "Transferrinsättigung",
+    "Transferrinsättigung",
+    "%",
+    "30-50",
+  ],
+  ["Ca-P-Haushalt", "phos", "Phosphat", "Phosphat (PHOT)", "mmol/l", "<2"],
+  ["Ca-P-Haushalt", "vd", "25-OH-Vitamin D", "25-OH-Vitamin D3", "nmol/l", ""],
+  ["Ca-P-Haushalt", "pth", "Parathormon", "Parathormon", "ng/l", ""],
+  ["Sonstige Parameter", "tsh", "TSH", "TSH", "mIU/l", "0,27-4,2"],
+  ["Sonstige Parameter", "a1c", "HbA1c", "HbA1c", "%", "4-6"],
+  ["Sonstige Parameter", "alb", "Albumin", "Albumin i.S.", "g/l", ">35"],
+  ["Sonstige Parameter", "crp", "CRP", "CRP", "mg/l", ""],
+  ["Vitamine", "b12", "Vitamin B12", "Vitamin B12", "pmol/l", ""],
+  [
+    "Vitamine",
+    "htc",
+    "Holotranscobalamin",
+    "Holo-Transcobalamin",
+    "pmol/l",
+    "",
+  ],
+  ["Vitamine", "mma", "Methylmalonsäure", "Methylmalonsäure", "nmol/l", ""],
+  ["Vitamine", "fol", "Folsäure", "Folsäure", "nmol/l", ""],
+  ["Vitamine", "b1", "Vitamin B1", "Vitamin B1 (Thiamin", "µg/l", ""],
+  ["Vitamine", "b6", "Vitamin B6", "Vitamin B6", "µg/l", ""],
+  ["NU", "gfr", "GFR Kreatinin (CKD-EPI)", "GFR Kreatinin", "ml/min", ""],
+  // Suchbegriff "Harnstoff n. Dialyse" ist der Originaltext im Labor
+  ["NU", "hv", "Harnstoff vor NU", "Harnstoff (PHOT)", "mg/dl", ""],
+  ["NU", "hn", "Harnstoff nach NU", "Harnstoff n. Dialyse", "mg/dl", ""],
+];
+const DEF = Object.fromEntries(I.map((x) => [x[1], x[5]]));
+// Bewertung gegen eigenen Zielbereich
+const WORD = {
+  unter: "unter dem Zielbereich",
+  über: "über dem Zielbereich",
+  im: "im Zielbereich",
+};
+// Bewertung gegen den Laborrichtwert (wenn kein eigener Zielbereich gesetzt ist)
+const WORDL = {
+  unter: "unter dem Laborrichtwert",
+  über: "über dem Laborrichtwert",
+  im: "im Laborrichtwert",
+};
+const MN = [
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
+];
+
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const num = (s) => {
+  const m = String(s || "")
+    .replace(",", ".")
+    .match(/-?\d+(\.\d+)?/);
+  return m ? parseFloat(m[0]) : NaN;
+};
+
+let S = { date: iso(new Date()), v: {}, lab: {} }; // eine gemeinsame Wertebasis
+let view = new Date();
+const fmt = (d) => d.split("-").reverse().join(".");
+const hasData = () => Object.keys(S.v).length > 0;
+
+/* ---------- Einlesen ---------- */
+function parse(txt) {
+  const T = txt
+    .split(/[\t\n\r]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const isVal = (s) => /^[<>]?\s*-?\d/.test(s || "");
+  const rep = { v: {}, lab: {}, n: 0 };
+  I.forEach(([g, id, l, k]) => {
+    // nur echte Label-Zellen (keine Zeilen mit ":") mit numerischem Wert danach
+    const i = T.findIndex(
+      (x, j) => x.startsWith(k) && !x.includes(":") && isVal(T[j + 1]),
+    );
+    if (i < 0) return;
+    rep.v[id] = T[i + 1].replace(/\./g, ",");
+    rep.n++;
+    const r = T[i + 3];
+    rep.lab[id] =
+      r && /^[\d.,<> -]+$/.test(r) && /\d/.test(r)
+        ? r
+            .replace(/\s/g, "")
+            .replace(/\./g, ",")
+            .replace(/(\d)-(\d)/, "$1 bis $2")
+            .replace(/(\d[\d,]*) bis 99999$/, ">$1")
+        : "";
+  });
+  return rep;
+}
+
+/* ---------- Bewertung ---------- */
+function range(t) {
+  t = (t || "").trim().replace(/\s/g, "").replace(/,/g, ".");
+  let m;
+  if ((m = t.match(/^(\d+\.?\d*)(?:-|bis)(\d+\.?\d*)$/))) return [+m[1], +m[2]];
+  if ((m = t.match(/^<(\d+\.?\d*)$/))) return [-Infinity, +m[1]];
+  if ((m = t.match(/^>(\d+\.?\d*)$/))) return [+m[1], Infinity];
+  return null;
+}
+function rate(rep, id, val) {
+  const r = range(DEF[id] || (rep.lab[id] || "").replace(/ bis /, "-")),
+    n = num(val);
+  if (!r || isNaN(n)) return "";
+  return n < r[0] ? "unter" : n > r[1] ? "über" : "im";
+}
+
+/* ---------- Ausgabe ---------- */
+function buildOne(date, rep) {
+  let o = `Quartalsuntersuchung in der Übersicht, Labor vom ${fmt(date)}\n`,
+    grp = "";
+  I.forEach(([g, id, l, k, u]) => {
+    if (g === "NU" && id === "hv") return;
+    if (g !== grp) {
+      o += `\n${g}\n`;
+      grp = g;
+    }
+    if (g === "NU") {
+      if (id === "gfr") {
+        o += `GFR Kreatinin (CKD-EPI): ${rep.v.gfr || "–"} ml/min\n`;
+        const a = num(rep.v.hv),
+          b = num(rep.v.hn);
+        o += `Harnstoff: ${rep.v.hv || "–"} mg/dl vor / ${rep.v.hn || "–"} mg/dl nach NU`;
+        if (a > 0 && b >= 0)
+          o += ` (URR ca. ${Math.round((1 - b / a) * 100)} %)`;
+        o += "\n";
+      }
+      return;
+    }
+    const v = rep.v[id];
+    if (!v) {
+      o += `${l}: nicht im Labor enthalten\n`;
+      return;
+    }
+    const r = rate(rep, id, v),
+      tg = DEF[id];
+    o +=
+      `${l}: ${v} ${u}${r ? ` (${(tg ? WORD : WORDL)[r]})` : ""}. ` +
+      (tg
+        ? "Zielbereich: " + tg.replace(/-/g, " bis ")
+        : "Laborrichtwert: " + (rep.lab[id] || "??")) +
+      "\n";
+  });
+  return o;
+}
+const build = () => buildOne(S.date, S);
+const show = () => {
+  $("out").textContent = hasData() ? build() : "Noch keine Werte.";
+};
+
+// Neue Werte ergänzen die Basis oder aktualisieren vorhandene; nicht enthaltene bleiben bestehen
+function load(t) {
+  const rep = parse(t);
+  if (!rep.n) {
+    $("msg").textContent = "Keine Laborwerte erkannt.";
+    return;
+  }
+  let neu = 0,
+    upd = 0;
+  Object.keys(rep.v).forEach((id) => {
+    if (id in S.v) {
+      if (S.v[id] !== rep.v[id]) upd++;
+    } else neu++;
+    S.v[id] = rep.v[id];
+    S.lab[id] = rep.lab[id];
+  });
+  show();
+  $("msg").textContent =
+    `${rep.n} Werte gelesen: ${neu} neu, ${upd} aktualisiert.`;
+}
+
+/* ---------- Drag & Drop, Zwischenablage ---------- */
+const drop = $("drop");
+["dragenter", "dragover"].forEach((e) =>
+  drop.addEventListener(e, (ev) => {
+    ev.preventDefault();
+    drop.classList.add("over");
+  }),
+);
+["dragleave", "drop"].forEach((e) =>
+  drop.addEventListener(e, (ev) => {
+    ev.preventDefault();
+    drop.classList.remove("over");
+  }),
+);
+drop.addEventListener("drop", async (ev) => {
+  let t = ev.dataTransfer.getData("text/plain");
+  if (!t && ev.dataTransfer.files[0]) t = await ev.dataTransfer.files[0].text();
+  load(t || "");
+});
+drop.onclick = () => drop.focus();
+$("clip").onclick = async (ev) => {
+  ev.stopPropagation();
+  try {
+    load(await navigator.clipboard.readText());
+  } catch (e) {
+    $("msg").textContent =
+      "Zugriff auf die Zwischenablage nicht erlaubt. Bitte ⌘V / Strg+V drücken.";
+  }
+};
+document.addEventListener("paste", (ev) => {
+  const t = (ev.clipboardData || window.clipboardData).getData("text");
+  if (t.split(/[\t\n\r]+/).length < 3) return;
+  ev.preventDefault();
+  load(t);
+});
+
+/* ---------- Kalender ---------- */
+function dlab() {
+  $("dlab").textContent = fmt(S.date);
+}
+function cal() {
+  const y = view.getFullYear(),
+    m = view.getMonth();
+  const off = (new Date(y, m, 1).getDay() + 6) % 7;
+  const n = new Date(y, m + 1, 0).getDate(),
+    td = iso(new Date());
+  let h = `<div class="ch"><button type="button" data-n="-1" aria-label="Vorheriger Monat">‹</button><b>${MN[m]} ${y}</b><button type="button" data-n="1" aria-label="Nächster Monat">›</button></div><div class="cg">`;
+  h +=
+    ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+      .map((w) => `<i>${w}</i>`)
+      .join("") + "<span></span>".repeat(off);
+  for (let d = 1; d <= n; d++) {
+    const s = iso(new Date(y, m, d));
+    h += `<button type="button" data-d="${s}" class="${s === S.date ? "sel" : ""} ${s === td ? "td" : ""}">${d}</button>`;
+  }
+  $("cal").innerHTML = h + "</div>";
+}
+$("dbtn").onclick = (e) => {
+  e.stopPropagation();
+  if ($("cal").classList.toggle("open")) {
+    view = new Date(S.date + "T12:00:00");
+    view.setDate(1);
+    cal();
+  }
+};
+$("cal").onclick = (e) => {
+  e.stopPropagation();
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.n) {
+    view = new Date(view.getFullYear(), view.getMonth() + +b.dataset.n, 1);
+    cal();
+  } else if (b.dataset.d) {
+    S.date = b.dataset.d;
+    dlab();
+    $("cal").classList.remove("open");
+    if (hasData()) show();
+  }
+};
+document.addEventListener("click", () => $("cal").classList.remove("open"));
+
+/* ---------- Copy & Reset ---------- */
+$("CopyBtn").onclick = async () => {
+  const b = $("CopyBtn");
+  if (!hasData()) return;
+  try {
+    await navigator.clipboard.writeText(build());
+    b.classList.add("done");
+    clearTimeout(b._t);
+    b._t = setTimeout(() => b.classList.remove("done"), 2000);
+  } catch (e) {
+    $("msg").textContent = "Kopieren nicht erlaubt, bitte Text markieren.";
+  }
+};
+$("resetBtn").onclick = () => {
+  S = { date: iso(new Date()), v: {}, lab: {} };
+  dlab();
+  $("msg").textContent = "";
+  show();
+};
+
+dlab();

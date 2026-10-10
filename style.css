@@ -1,0 +1,386 @@
+/* ===== BASE ===== */
+body {
+  margin: 0;
+  padding: 0 0 60px;
+  background: linear-gradient(135deg, #e3f2ff, #f8faff);
+  font-family: Arial, Helvetica, sans-serif;
+  color: #1d2330;
+}
+
+/* ===== HEADER ===== */
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #005fa3, #0095ff);
+  padding: 17px 0;
+  padding-top: calc(17px + env(safe-area-inset-top, 0px));
+  margin-bottom: 28px;
+}
+.header h1 {
+  margin: 0;
+  font-size: 46px;
+  color: #fff;
+  letter-spacing: 1.1px;
+}
+
+/* ===== BUTTONS ===== */
+.BTN {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  color: #000;
+  cursor: pointer;
+  transition:
+    scale 0.12s ease,
+    background 0.25s ease,
+    box-shadow 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.BTN:hover {
+  background: #d1cfcf;
+  scale: 1.12;
+}
+.BTN:active {
+  background: #c4c4c4;
+}
+.BTN svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+#resetBtn {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  translate: 0 -50%;
+}
+
+/* Copy-Button: Kopier-Symbol -> Haken */
+#CopyBtn {
+  position: relative;
+  flex: none;
+}
+#CopyBtn svg {
+  position: absolute;
+  transition:
+    transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1),
+    opacity 0.25s;
+}
+#CopyBtn .ic-check {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  opacity: 0;
+  transform: scale(0.4) rotate(-30deg);
+}
+#CopyBtn.done {
+  background: #1c8a3a !important;
+}
+#CopyBtn.done .ic-copy {
+  opacity: 0;
+  transform: scale(0.3) rotate(90deg);
+}
+#CopyBtn.done .ic-check {
+  opacity: 1;
+  transform: none;
+  stroke-dashoffset: 0;
+  transition:
+    stroke-dashoffset 0.4s ease 0.15s,
+    transform 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) 0.1s,
+    opacity 0.2s;
+}
+
+/* ===== KARTEN ===== */
+.card {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 715px;
+  margin: 0 auto 22px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.05),
+    0 12px 20px rgba(0, 0, 0, 0.1);
+}
+.card.datum {
+  z-index: 5;
+} /* Kalender liegt über der Ausgabe-Karte */
+
+/* ===== DROP-FELD ===== */
+.drop {
+  padding: 26px 16px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.65);
+  border: 2px dashed #7fb4e6;
+  border-radius: 16px;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.drop:hover,
+.drop.over,
+.drop:focus {
+  background: rgba(0, 119, 204, 0.08);
+  border-color: #0077cc;
+}
+.drop b {
+  font-size: 1.15rem;
+}
+.drop p {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  opacity: 0.65;
+}
+.pill {
+  margin-top: 14px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0077cc, #00a2ff);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+#msg {
+  min-height: 1.2em;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
+/* ===== DATUM ===== */
+.umrechner {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+}
+.title {
+  font-size: 1.1rem;
+}
+.eingabefeld {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 13px;
+  transition:
+    transform 0.2s,
+    box-shadow 0.25s;
+}
+.eingabefeld:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.08);
+}
+.eingabefeld.dd {
+  position: relative;
+  max-width: 260px;
+}
+.eingabefeld.dd:hover {
+  transform: none;
+  box-shadow: none;
+}
+.dbtn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 5px;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+.dbtn:hover {
+  border-bottom-color: #0077cc;
+}
+
+/* ===== KALENDER-FENSTER ===== */
+.cal {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100vw - 52px);
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s ease;
+}
+.cal.open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.cal button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #222;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.ch b {
+  font-size: 1.05rem;
+}
+.ch button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  line-height: 1;
+  transition: background 0.2s;
+}
+.cg {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.cg i {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 26px;
+  font-size: 0.78rem;
+  font-style: normal;
+  opacity: 0.55;
+}
+.cg button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.ch button:hover,
+.cg button:hover {
+  background: rgba(0, 119, 204, 0.12);
+}
+.cg button:hover {
+  transform: scale(1.08);
+}
+.cg button.td {
+  box-shadow: inset 0 0 0 1.5px #0077cc;
+}
+.cg button.sel {
+  background: linear-gradient(135deg, #0077cc, #00a2ff);
+  color: #fff;
+}
+
+/* ===== AUSGABE ===== */
+.outrow {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 13px;
+  font:
+    13px/1.55 ui-monospace,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.hint {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+/* ===== HANDY ===== */
+@media (max-width: 650px) {
+  html {
+    overflow-x: hidden;
+  }
+  .header h1 {
+    font-size: 26px;
+  }
+  #resetBtn {
+    width: 40px;
+    height: 40px;
+    right: 10px;
+  }
+  .card {
+    margin: 0 12px 16px;
+    padding: 18px 14px;
+  }
+  .umrechner {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .title {
+    text-align: center;
+    font-size: 1.3rem;
+  }
+  .eingabefeld.dd {
+    max-width: none;
+  }
+  .cal {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
+  .dbtn {
+    min-height: 44px;
+    font-size: 20px;
+  }
+  .BTN {
+    width: 50px;
+    height: 50px;
+  }
+}
