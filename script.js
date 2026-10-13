@@ -15,8 +15,6 @@ const I = [
   ["Ca-P-Haushalt", "phos", "Phosphat", "Phosphat (PHOT)", "mmol/l", "<2"],
   ["Ca-P-Haushalt", "vd", "25-OH-Vitamin D", "25-OH-Vitamin D3", "nmol/l", ""],
   ["Ca-P-Haushalt", "pth", "Parathormon", "Parathormon", "ng/l", ""],
-  ["Sonstige Parameter", "tsh", "TSH", "TSH", "mIU/l", "0,27-4,2"],
-  ["Sonstige Parameter", "a1c", "HbA1c", "HbA1c", "%", "4-6"],
   ["Sonstige Parameter", "alb", "Albumin", "Albumin i.S.", "g/l", ">35"],
   ["Sonstige Parameter", "crp", "CRP", "CRP", "mg/l", ""],
   ["Vitamine", "b12", "Vitamin B12", "Vitamin B12", "pmol/l", ""],
@@ -173,6 +171,7 @@ const show = () => {
 function load(t) {
   const rep = parse(t);
   if (!rep.n) {
+    $("msg").className = "";
     $("msg").textContent = "Keine Laborwerte erkannt.";
     return;
   }
@@ -186,8 +185,14 @@ function load(t) {
     S.lab[id] = rep.lab[id];
   });
   show();
-  $("msg").textContent =
-    `${rep.n} Werte gelesen: ${neu} neu, ${upd} aktualisiert.`;
+  const total = I.length,
+    have = I.filter((x) => x[1] in S.v).length,
+    fehlt = I.filter((x) => !(x[1] in S.v)).map((x) => x[2]);
+  const info = `${neu} neu, ${upd} aktualisiert`;
+  $("msg").className = fehlt.length ? "" : "ok";
+  $("msg").textContent = fehlt.length
+    ? `${have} von ${total} Werten gelesen (${info}). Fehlt: ${fehlt.join(", ")}.`
+    : `✓ Alle ${total} Werte gelesen (${info}).`;
 }
 
 /* ---------- Drag & Drop, Zwischenablage ---------- */
@@ -215,6 +220,7 @@ $("clip").onclick = async (ev) => {
   try {
     load(await navigator.clipboard.readText());
   } catch (e) {
+    $("msg").className = "";
     $("msg").textContent =
       "Zugriff auf die Zwischenablage nicht erlaubt. Bitte ⌘V / Strg+V drücken.";
   }
@@ -281,12 +287,14 @@ $("CopyBtn").onclick = async () => {
     clearTimeout(b._t);
     b._t = setTimeout(() => b.classList.remove("done"), 2000);
   } catch (e) {
+    $("msg").className = "";
     $("msg").textContent = "Kopieren nicht erlaubt, bitte Text markieren.";
   }
 };
 $("resetBtn").onclick = () => {
   S = { date: iso(new Date()), v: {}, lab: {} };
   dlab();
+  $("msg").className = "";
   $("msg").textContent = "";
   show();
 };
